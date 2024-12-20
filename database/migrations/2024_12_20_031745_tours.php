@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string("title");
             $table->string("path_img");
-            $table->date("data");
+            $table->date("date");
             $table->integer("price");
             $table->timestamps();
         });

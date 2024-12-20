@@ -8,17 +8,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Models\Request as RequestModel;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+
+    public function index(Request $request)
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        // Получаем ID текущего пользователя
+        $userId = Auth::id();
+
+        // Проверяем роль пользователя
+        if (Auth::user()->role === 'admin') {
+            // Администратор видит все заявки
+            $bookedTours = RequestModel::with(['tour', 'user'])->get();
+        } else {
+            // Обычный пользователь видит только свои заявки
+            $bookedTours = RequestModel::where('user_id', $userId)
+                ->with('tour') // Подгружаем связанные туры
+                ->get();
+        }
+
+        // Фильтрация по туру (если указан tour_id в запросе)
+        if ($request->has('tour_id')) {
+            $bookedTours = $bookedTours->where('tour_id', $request->tour_id);
+        }
+
+        return view('profile.index', compact('bookedTours'));
     }
 
     /**
@@ -34,7 +53,7 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route('profile.index')->with('status', 'profile-updated');
     }
 
     /**
